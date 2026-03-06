@@ -22,6 +22,9 @@ func DotVecSIMD32(a, b *uint8, len int) uint32
 //go:noescape
 func DotVecSIMD64(a, b *uint8, len int) uint32
 
+//go:noescape
+func SumVecSIMD(a *uint8, len int) uint16
+
 func AddVec(a, b []uint8) ([]uint8, error) {
 	if len(a) != len(b) {
 		return nil, fmt.Errorf("slices must be same length: %d != %d", len(a), len(b))
@@ -97,4 +100,14 @@ func MultMatrix(a, b [][]uint8) ([][]uint32, error) {
 		}
 	}
 	return result, nil
+}
+
+// SumVec computes the sum of all elements in a uint8 slice using SIMD (vaddlvq_u8).
+// Returns the result as uint16 to accommodate sums that exceed uint8 range.
+func SumVec(a []uint8) (uint16, error) {
+	if len(a) == 0 {
+		return 0, fmt.Errorf("slice must have length greater than 0")
+	}
+
+	return SumVecSIMD(&a[0], len(a)), nil
 }

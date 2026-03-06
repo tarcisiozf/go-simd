@@ -310,3 +310,56 @@ done:
     ADD R8, R6
     MOVD R6, ret+24(FP)
     RET
+
+
+// func SumVecSIMD(a *uint8, len int) uint16
+// Implements the equivalent of vaddlvq_u8: sums all uint8 elements in a vector,
+// returning the result as uint16 (unsigned add long across vector).
+// ARM NEON instruction: UADDLV Vn.B16, Vd -> sums all 16 uint8 lanes into one uint16.
+TEXT ·SumVecSIMD(SB), NOSPLIT, $0-18
+    MOVD a+0(FP), R0      // pointer to 0th element of slice
+    MOVD len+8(FP), R1    // length of slice
+
+    MOVD R1, R2            // Copy length for SIMD processing
+    AND $~15, R2           // Round down to nearest multiple of 16
+
+    MOVD $0, R5            // Scalar accumulator for SIMD results
+    MOVD $0, R6            // Scalar accumulator for remainder
+
+    CBZ R2, sum_remainder
+
+sum_loop:
+    VLD1.P 16(R0), [V0.B16]  // Load 16 uint8 values
+
+    // UADDLV V0.B16, V1
+    // Sums all 16 uint8 lanes into a single uint16 scalar in V1.
+    // This is the vaddlvq_u8 NEON intrinsic.
+    // Not supported by Go assembler, so we use the binary encoding.
+    // Encoding: 0 1 1 01110 00 11000 00011 10 00000 00001
+    // = 0x6E303801
+    WORD $0x6E303801
+
+    // Move the uint16 result from V1.H[0] to a general-purpose register
+    VMOV V1.H[0], R3
+
+    ADD R3, R5             // Accumulate chunk sum into R5
+
+    SUB $16, R2, R2
+    CBNZ R2, sum_loop
+
+sum_remainder:
+    AND $15, R1, R2
+    CBZ R2, sum_done
+
+sum_remainder_loop:
+    MOVBU.P 1(R0), R3     // Load one byte
+    ADD R3, R6             // Accumulate
+    SUB $1, R2, R2
+    CBNZ R2, sum_remainder_loop
+
+sum_done:
+    ADD R6, R5             // Combine SIMD and scalar sums
+    MOVD R5, ret+16(FP)
+    RET
+
+

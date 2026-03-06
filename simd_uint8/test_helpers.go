@@ -64,3 +64,11 @@ func multMatrixScalar(a, b [][]uint8) [][]uint32 {
 
 	return result
 }
+
+func sumScalar(a []uint8) uint16 {
+	var result uint16
+	for i := 0; i < len(a); i++ {
+		result += uint16(a[i])
+	}
+	return result
+}

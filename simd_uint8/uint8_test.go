@@ -135,6 +135,32 @@ func BenchmarkMatrixMult(b *testing.B) {
 	}
 }
 
+func BenchmarkSum(b *testing.B) {
+	sizes := []int{16, 100, 1000, 4096, 10000, 100000}
+
+	for _, size := range sizes {
+		a, _ := generateTestData(size)
+
+		b.Run("Scalar-"+fmt.Sprint(size), func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				_ = sumScalar(a)
+			}
+		})
+
+		b.Run("SIMD-"+fmt.Sprint(size), func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				_, _ = SumVec(a)
+			}
+		})
+	}
+}
+
 // TestCorrectness verifies that both implementations return the same results
 func TestCorrectness(t *testing.T) {
 	sizes := []int{15, 16, 17, 100, 1000}
@@ -175,6 +201,17 @@ func TestCorrectness(t *testing.T) {
 				t.Errorf("FOR SUB-> Size %d: Results don't match. Scalar: %d, SIMD: %d",
 					size, uint8ScalarDiff[i], uint8SimdDiff[i])
 			}
+		}
+
+		uint8ScalarVecSum := sumScalar(uint8_a)
+		uint8SimdVecSum, err := SumVec(uint8_a)
+		if err != nil {
+			t.Errorf("Error: %v", err)
+		}
+
+		if uint8ScalarVecSum != uint8SimdVecSum {
+			t.Errorf("FOR SUM-> Size %d: Results don't match. Scalar: %d, SIMD: %d",
+				size, uint8ScalarVecSum, uint8SimdVecSum)
 		}
 
 	}
