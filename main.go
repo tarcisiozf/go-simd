@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"go-simd/simd_int8"
-	"go-simd/simd_uint8"
+
+	"github.com/jairad26/go-simd/simd_int8"
+	"github.com/jairad26/go-simd/simd_uint8"
 )
 
 func main() {
